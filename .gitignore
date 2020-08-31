@@ -1,0 +1,11 @@
+*.o
+Makefile
+moc_*.cpp
+moc_*.h
+/.qmake.cache
+/.qmake.stash
+
+# qtcreator generated files
+ecpb.pro.user
+
+ecpb
