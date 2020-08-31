@@ -1,4 +1,6 @@
 #include <QDebug>
+#include <QFile>
+
 #include "Arguments.h"
 
 Arguments::Arguments(QCoreApplication *app) : QObject(app)
@@ -65,6 +67,32 @@ int Arguments::requests()
     }
 
     return value;
+}
+
+const QVector<QString>& Arguments::address()
+{
+    if(!_address.isEmpty()) return _address;
+
+    if(!parser.isSet("address")) {
+        _address << "bitcoincash:qp3wjpa3tjlj042z2wv7hahsldgwhwy0rq9sywjpyy";
+        return _address;
+    }
+
+    QFile file(parser.value("address"));
+    if(!file.open(QIODevice::ReadOnly)) {
+        qFatal("Could not read from file %s", qUtf8Printable(file.fileName()));
+    }
+
+    while(!file.atEnd()) {
+        QString line = file.readLine().trimmed();
+
+        if(!line.isEmpty()) {
+            _address << line;
+        }
+    }
+    file.close();
+
+    return _address;
 }
 
 bool Arguments::help()

@@ -10,9 +10,18 @@
 #include <QThread>
 
 
-Session::Session(Arguments* args, QObject* parent): QObject(parent), QRunnable()
+Session::Session(QObject* parent): QObject(parent), QRunnable()
+{
+}
+
+void Session::setArguments(Arguments *args)
 {
     this->args = args;
+}
+
+void Session::setRequests(int requests)
+{
+    this->requests = requests;
 }
 
 void Session::run() {
@@ -23,11 +32,13 @@ void Session::run() {
     QVariant serverVersion = rpc.call("server.version");
     qInfo() << "Server version:" << serverVersion;
 
-    rpc.call("blockchain.address.get_balance", QVariantList() << "bitcoincash:qqfc3lxxylme0w87c5j2wdmsqln6e844xcmsdssvzy");
 
-    for(int i = 0; i < 10; i++) {
-        QVariant result = rpc.call("server.ping");
-        result = "OK " + QString::number(i);
+
+    for(int i = 0; i < requests; i++) {
+        int j = i % args->address().count();
+        QString address = args->address()[j];
+        rpc.call("blockchain.address.get_balance", QVariantList() << address);
+        rpc.call("blockchain.address.listunspent", QVariantList() << address);
     }
 
 

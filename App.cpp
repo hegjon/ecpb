@@ -29,14 +29,18 @@ App::App(int argc, char *argv[]) : QCoreApplication (argc, argv)
     qInfo() << "Verbose       " << args.verbose();
     qInfo() << "Concurrency   " << args.concurrency();
     qInfo() << "Total requests" << args.requests();
+    qInfo() << "Addresses     " << args.address().count();
 
+    int requestPerSession = args.requests() / args.concurrency();
 
     sessions.setMaxThreadCount(args.concurrency());
     sessions.setObjectName("Session Pool");
 
     qInfo() << "Starting";
     for(int i = 0; i < args.concurrency(); i++) {
-        Session *s = new Session(&args, this);
+        Session *s = new Session(this);
+        s->setArguments(&args);
+        s->setRequests(requestPerSession);
         connect(s, &Session::resultReady, this, &App::sessionDone, Qt::QueuedConnection);
         s->setAutoDelete(true);
         sessions.start(s);

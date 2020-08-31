@@ -10,8 +10,14 @@ class Session : public QObject, public QRunnable
     Q_OBJECT
 
     Arguments* args;
+    int requests = 1;
+
 public:
-    Session(Arguments *args, QObject *parent = nullptr);
+    Session(QObject *parent = nullptr);
+
+    void setArguments(Arguments *args);
+    void setRequests(int requests);
+
     void run() override;
 
 signals:
