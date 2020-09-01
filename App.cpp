@@ -36,9 +36,10 @@ App::App(int argc, char *argv[]) : QCoreApplication (argc, argv)
     sessions.setMaxThreadCount(args.concurrency());
     sessions.setObjectName("Session Pool");
 
-    qInfo() << "Starting";
+    qInfo() << "Starting" << args.concurrency() << "session(s)";
     for(int i = 0; i < args.concurrency(); i++) {
         Session *s = new Session(this);
+        s->setObjectName("Session" + QString::number(i));
         s->setArguments(&args);
         s->setRequests(requestPerSession);
         connect(s, &Session::resultReady, this, &App::sessionDone, Qt::QueuedConnection);
@@ -48,7 +49,7 @@ App::App(int argc, char *argv[]) : QCoreApplication (argc, argv)
 
     sessions.waitForDone();
 
-    qInfo() << "Done";
+    qInfo() << "Finished";
     std::exit(0);
 }
 

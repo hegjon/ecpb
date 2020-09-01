@@ -12,20 +12,17 @@
 RPC::RPC(QObject *parent, const QString &hostName, quint16 port) : QObject(parent)
 {
     counter = QAtomicInt(0);
-    qInfo() << "Connecting";
+    qInfo() << "Connecting to" << hostName;
 
     socket = new QTcpSocket(this);
 
     socket->connectToHost(hostName, port);
 
     if(socket->waitForConnected(1000)) {
-        qInfo() << "Connected";
+        qInfo() << "Connected to" << hostName;
     } else {
-        qInfo() << "Not connected";
+        qInfo() << "Could not connect to" << hostName;
     }
-
-
-    qInfo() << "Done";
 }
 
 RPC::~RPC()
@@ -39,7 +36,6 @@ QVariant RPC::call(const QString &method, const QVariantList &params)
     json["id"] = counter++;
     json["jsonrpc"] = "2.0";
     json["method"] = method;
-    //json.insert("params", QJsonArray::fromVariantList(params));
     json["params"] = QJsonArray::fromVariantList(params);
 
     const auto format = QJsonDocument::JsonFormat::Compact;
@@ -56,7 +52,7 @@ QVariant RPC::call(const QString &method, const QVariantList &params)
     wait.exec();
 
     QByteArray result = socket->readLine();
-    qDebug().noquote() << "Result:" << result;
+    qDebug().noquote() << "Result:" << result.trimmed();
     QJsonDocument json2 = QJsonDocument::fromJson(result);
 
     return json2.object().value("result");

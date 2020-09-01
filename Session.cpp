@@ -25,26 +25,23 @@ void Session::setRequests(int requests)
 }
 
 void Session::run() {
-    qInfo() << qSetFieldWidth(5) << "Begin" << 0 << qSetFieldWidth(0) << this << QThread::currentThread();
+    qInfo() << "Begin" << this << "on" << QThread::currentThread();
 
     RPC rpc(nullptr, "192.168.128.3", 50001);
+    rpc.setObjectName("RPC session" + this->objectName());
     QString result;
     QVariant serverVersion = rpc.call("server.version");
-    qInfo() << "Server version:" << serverVersion;
+    qDebug() << "Server version:" << serverVersion;
 
-
-
-    for(int i = 0; i < requests; i++) {
+    for(int i = 0; i < requests/3; i++) {
         int j = i % args->address().count();
         QString address = args->address()[j];
         rpc.call("blockchain.address.get_balance", QVariantList() << address);
         rpc.call("blockchain.address.listunspent", QVariantList() << address);
+        rpc.call("blockchain.address.get_history", QVariantList() << address);
     }
 
+    qInfo() << "End" << this << "on" << QThread::currentThread();
 
-    qInfo().noquote() << "Result:" << result;
-
-    qInfo() << qSetFieldWidth(5) << "End" << 0 << qSetFieldWidth(0) << this;
-
-    emit resultReady(0, result);
+    emit resultReady((int) 0, result);
 }
