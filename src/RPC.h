@@ -8,13 +8,13 @@ class RPC: public QObject
 {
     Q_OBJECT
 
-    QAbstractSocket* socket;
+    QIODevice* socket;
     QByteArray buffer;
 
 public:
-    RPC(QAbstractSocket *device, QObject *parent = nullptr);
+    RPC(QIODevice *device, QObject *parent = nullptr);
     ~RPC();
-    QString send(const QString &method, const QVariantList &params = QVariantList());
+    QString send(const QString &method, const QVariantList &params = QVariantList(), const QString &id = QString());
 
 signals:
     void result(QString id, QVariant result);

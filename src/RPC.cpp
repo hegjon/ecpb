@@ -8,7 +8,7 @@
 #include <QUuid>
 #include <QDebug>
 
-RPC::RPC(QAbstractSocket *device, QObject *parent) : QObject(parent)
+RPC::RPC(QIODevice *device, QObject *parent) : QObject(parent)
 {
     this->socket = device;
     connect(socket, &QAbstractSocket::readyRead, this, &RPC::readyRead, Qt::DirectConnection);
@@ -18,7 +18,7 @@ RPC::~RPC()
 {
 }
 
-QString RPC::send(const QString &method, const QVariantList &params)
+QString RPC::send(const QString &method, const QVariantList &params, const QString &id)
 {
     if(!socket->isOpen()) {
         qWarning() << "Socket is not open!";
@@ -30,9 +30,10 @@ QString RPC::send(const QString &method, const QVariantList &params)
         return QString();
     }
 
-    QString id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    auto id2 = id.length() > 0 ? id : QUuid::createUuid().toString(QUuid::WithoutBraces);
+
     QJsonObject json = QJsonObject();
-    json["id"] = id;
+    json["id"] = id2;
     json["jsonrpc"] = "2.0";
     json["method"] = method;
     json["params"] = QJsonArray::fromVariantList(params);
@@ -43,9 +44,8 @@ QString RPC::send(const QString &method, const QVariantList &params)
     qDebug().noquote() << "Writing:" << data;
     socket->write(data);
     socket->write("\n");
-    socket->flush();
 
-    if(!socket->waitForBytesWritten(2000)) {
+    if(!socket->waitForBytesWritten(1)) {
         qWarning() << "Could not write to" << socket;
     }
     socket->waitForReadyRead(2000);
