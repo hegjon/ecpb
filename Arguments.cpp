@@ -37,8 +37,15 @@ Arguments::Arguments(QCoreApplication *app) : QObject(app)
 
 QString Arguments::hostname()
 {
-    return "192.168.128.3";
+    if(!_hostname.isNull()) return _hostname;
 
+    if(parser.positionalArguments().isEmpty()) {
+        _hostname = "localhost";
+    } else {
+        _hostname = parser.positionalArguments().first();
+    }
+
+    return _hostname;
 }
 
 quint16 Arguments::port()

@@ -1,19 +1,25 @@
 #pragma once
 
 #include <QObject>
-#include <QTcpSocket>
-#include <QAtomicInt>
+#include <QAbstractSocket>
 #include <QVariant>
 
 class RPC: public QObject
 {
     Q_OBJECT
-public:
-    RPC(QObject *parent = nullptr, const QString &hostName = "localhost", quint16 port = 50001);
-    ~RPC();
-    QVariant call(const QString &method, const QVariantList &params = QVariantList());
 
-private:
-    QTcpSocket* socket;
-    QAtomicInt counter;
+    QAbstractSocket* socket;
+    QByteArray buffer;
+
+public:
+    RPC(QAbstractSocket *device, QObject *parent = nullptr);
+    ~RPC();
+    QString send(const QString &method, const QVariantList &params = QVariantList());
+
+signals:
+    void result(QString id, QVariant result);
+    void error(QString id, QVariant error);
+
+private slots:
+    void readyRead();
 };

@@ -1,13 +1,8 @@
 #include "Session.h"
-#include "RPC.h"
 
 #include <QtDebug>
-#include <QRunnable>
-#include <QEventLoop>
-#include <QUrl>
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
 #include <QThread>
+#include <QTcpSocket>
 
 
 Session::Session(QObject* parent): QObject(parent), QRunnable()
@@ -24,24 +19,68 @@ void Session::setRequests(int requests)
     this->requests = requests;
 }
 
-void Session::run() {
+void Session::run()
+{
     qInfo() << "Begin" << this << "on" << QThread::currentThread();
+    //this->moveToThread(QThread::currentThread());
 
-    RPC rpc(nullptr, "192.168.128.3", 50001);
+    QTcpSocket socket(nullptr);
+
+    socket.connectToHost(args->hostname(), args->port());
+
+    if(socket.waitForConnected(1000)) {
+        qDebug().noquote().nospace() << "Connected to " << args->hostname() << ":" << args->port();
+    } else {
+        qCritical() << "Could not connect to" << args->hostname();
+    }
+
+
+    RPC rpc = RPC(&socket, nullptr);
     rpc.setObjectName("RPC session" + this->objectName());
-    QString result;
-    QVariant serverVersion = rpc.call("server.version");
-    qDebug() << "Server version:" << serverVersion;
+    connect(&rpc, &RPC::result, this, &Session::result, Qt::DirectConnection);
+    connect(&rpc, &RPC::error, this, &Session::error, Qt::DirectConnection);
+
+
+    SessionResult result;
+    result.start = QDateTime::currentDateTime();
+
+    rpc.send("server.version");
+    result.requests += 1;
 
     for(int i = 0; i < requests/3; i++) {
         int j = i % args->address().count();
         QString address = args->address()[j];
-        rpc.call("blockchain.address.get_balance", QVariantList() << address);
-        rpc.call("blockchain.address.listunspent", QVariantList() << address);
-        rpc.call("blockchain.address.get_history", QVariantList() << address);
+
+        rpc.send("blockchain.address.get_balance", QVariantList() << address);
+        rpc.send("blockchain.address.listunspent", QVariantList() << address);
+        rpc.send("blockchain.address.get_history", QVariantList() << address);
+
+        result.requests += 3;
+        socket.waitForReadyRead(500);
     }
 
-    qInfo() << "End" << this << "on" << QThread::currentThread();
+    while(result.requests > responses) {
+        qDebug() << "Waiting. reqests:" << result.requests << "responses:" << responses;
+        socket.waitForReadyRead(500);
+    }
 
-    emit resultReady((int) 0, result);
+    result.end = QDateTime::currentDateTime();
+
+    emit resultReady(result);
+
+    qInfo() << "End" << this << "on" << QThread::currentThread();
 }
+
+void Session::result(QString id, QVariant result)
+{
+    Q_UNUSED(result);
+    responses++;
+    qInfo() << "Session::result" << id;
+}
+
+void Session::error(QString id, QVariant error)
+{
+    responses++;
+    qWarning() << "Session::error" << id << error;
+}
+

@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QThreadPool>
+#include <QMutex>
 #include "Session.h"
 #include "Arguments.h"
 
@@ -12,10 +13,14 @@ class App : public QCoreApplication
     QThreadPool sessions;
     void quitIfSessionsAreDone();
     QAtomicInt stoppedSessions = 0;
+    Arguments *args;
+    QMutex mutex;
+
 
 public:
     explicit App(int argc, char *argv[]);
+    void run();
 
 public slots:
-    void sessionDone(int id, const QString &result);
+    void resultReady(SessionResult result);
 };
